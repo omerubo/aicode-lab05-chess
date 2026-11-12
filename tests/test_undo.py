@@ -172,17 +172,21 @@ def test_new_game_clears_the_undo_history(opponent):
     assert view["opponent"] == opponent
 
 
-def test_undo_of_a_pawn_reaching_the_last_rank_returns_a_pawn():
+def test_undo_of_a_promotion_returns_a_pawn():
     session = Session()
     session.dispatch({"action": "promotion-setup"})
-    play_all(session, [("b7", "a8")])
+    before = deepcopy(session.snapshot())
+    promoted = session.dispatch(
+        {"action": "move", "source": "b7", "target": "a8", "promotion": "N"})
+    assert promoted["board"]["a8"] == "wN"
+    assert promoted["moves"][-1] == "b7xa8=N"
 
     view = undo(session)
 
     assert view["board"]["b7"] == "wP"
     assert view["board"]["a8"] == "bR"
     assert view["turn"] == "w"
-    assert len(view["moves"]) == 8
+    assert session.snapshot() == before
 
 
 def test_undo_keeps_the_undone_positions_for_a_later_redo():
