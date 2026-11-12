@@ -4,7 +4,6 @@ from copy import deepcopy
 
 from game import coordinates
 
-
 SAVE_VERSION = 1
 
 
