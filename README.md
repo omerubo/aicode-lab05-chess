@@ -38,6 +38,25 @@ plays the same moves.
 - `static/`: browser presentation and square selection. All movement decisions run in Python.
 - `tests/`: starter behavior checks.
 
+## Shared game history
+
+`Session.history` is a list of snapshots, oldest first, with one entry per successful
+individual move, including each computer move. Each snapshot has the shape
+`{"position": [board, turn], "notation": labels}` and describes the game **before**
+that move. The board and notation are independent copies, created by `Session.snapshot()`.
+`Session.play()` already records the snapshot; feature branches must not add it twice.
+An illegal move adds no history, and a new game clears it.
+
+The undo branch can pop a snapshot, restore its `position` and `notation`, and call
+`after_move()` to refresh derived sidebar information. Restore snapshots directly,
+without replaying moves through `play()`.
+
+**Decision for undo against the computer:** one undo reverses the computer's reply
+and the player's preceding move, returning to the player's turn. If the computer has
+not replied yet (including a game-ending player move), reverse just the player's move.
+In a two-player game, undo reverses one individual move. Undo at the beginning does nothing.
+This commit provides history only; the undo control and behavior belong to the undo branch.
+
 ## Working together
 
 Start your two branches from `main`. One partner implements save/load; the other implements

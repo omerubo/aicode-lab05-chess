@@ -2,6 +2,7 @@
 
 from computer import choose_move
 from game import (
+    copy_position,
     legal_moves,
     move,
     new_position,
@@ -27,9 +28,16 @@ class Session:
         self.position = new_position()
         self.notation = []
         self.opponent = opponent
+        self.history = []
+
+    def snapshot(self):
+        """A pre-move snapshot: undo restores both fields from history.pop()."""
+        return {"position": copy_position(self.position), "notation": self.notation.copy()}
 
     def play(self, source, target):
+        before = self.snapshot()
         label = move(self.position, source, target)
+        self.history.append(before)
         self.notation.append(label)
         self.after_move()
 
