@@ -34,6 +34,7 @@ plays the same moves.
 - `game.py`: board and turn in a position list; movement, check, checkmate and stalemate.
 - `session.py`: game actions, the opponent, displayed move notation, and sidebar information.
 - `computer.py`: the computer opponent.
+- `savegame.py`: validation of the versioned JSON save format.
 - `server.py`: one in-memory game, HTTP actions, and static files. Restarting loses the game.
 - `static/`: browser presentation and square selection. All movement decisions run in Python.
 - `tests/`: starter behavior checks.
@@ -47,7 +48,7 @@ that move. The board and notation are independent copies, created by `Session.sn
 `Session.play()` already records the snapshot; feature branches must not add it twice.
 An illegal move adds no history, and a new game clears it.
 
-The undo branch can pop a snapshot, restore its `position` and `notation`, and call
+Undo pops a snapshot, restores its `position` and `notation`, and calls
 `after_move()` to refresh derived sidebar information. Restore snapshots directly,
 without replaying moves through `play()`.
 
@@ -55,7 +56,20 @@ without replaying moves through `play()`.
 and the player's preceding move, returning to the player's turn. If the computer has
 not replied yet (including a game-ending player move), reverse just the player's move.
 In a two-player game, undo reverses one individual move. Undo at the beginning does nothing.
-This commit provides history only; the undo control and behavior belong to the undo branch.
+
+## Save and load
+
+Click **Save game** to download `chess.save.json`. Click **Load game** and select the
+file to resume it, including in a fresh server instance. Loading replaces the current
+game and restores its board, turn, notation, opponent mode, and undo history. Invalid
+files leave the current game unchanged. The browser accepts files up to 900 KB.
+If a loaded game is waiting for the computer, the browser asks it to make its next move.
+
+New game clears `history`. Save/load preserves all snapshots, so moves played before
+saving remain available to undo after loading.
+
+The save API is `{"action": "save"}`; the load API is
+`{"action": "load", "data": saved_object}`. The current format version is `1`.
 
 ## Working together
 

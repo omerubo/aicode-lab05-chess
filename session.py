@@ -1,5 +1,7 @@
 """Application actions and information shown beside the board."""
 
+from copy import deepcopy
+
 from computer import choose_move
 from game import (
     copy_position,
@@ -9,6 +11,7 @@ from game import (
     status,
     winner,
 )
+from savegame import SAVE_VERSION, validate_save
 
 
 # Legal from the standard starting position under this game's rules.
@@ -61,6 +64,22 @@ class Session:
         if steps:
             self.after_move()
 
+    def save(self):
+        return deepcopy({
+            "version": SAVE_VERSION,
+            "opponent": self.opponent,
+            **self.snapshot(),
+            "history": self.history,
+        })
+
+    def load(self, data):
+        saved = validate_save(data)
+        self.position = saved["position"]
+        self.notation = saved["notation"]
+        self.opponent = saved["opponent"]
+        self.history = saved["history"]
+        self.after_move()
+
     def after_move(self):
         pass
 
@@ -96,6 +115,10 @@ class Session:
             self.undo()
         elif command == "legal":
             return {"targets": legal_moves(self.position, action.get("source"))}
+        elif command == "save":
+            return self.save()
+        elif command == "load":
+            self.load(action.get("data"))
         elif command == "new":
             self.__init__(action.get("opponent", "human"))
         elif command == "promotion-setup":
