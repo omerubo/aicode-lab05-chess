@@ -90,6 +90,8 @@ function render() {
     }
     return item;
   }));
+  // Every move adds one history entry and one notation label, so no moves means nothing to undo.
+  document.querySelector('#undo').disabled = !state.moves.length;
   document.querySelector('#captured-panel').hidden = !Object.hasOwn(state, 'captured');
   const captured = state.captured || [];
   document.querySelector('#captured').replaceChildren(...captured.map(pieceGlyph));

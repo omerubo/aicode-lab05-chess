@@ -29,6 +29,8 @@ class Session:
         self.notation = []
         self.opponent = opponent
         self.history = []
+        # Snapshots of the positions undo left, newest last, kept so redo can restore them.
+        self.undone = []
 
     def snapshot(self):
         """A pre-move snapshot: undo restores both fields from history.pop()."""
@@ -40,6 +42,24 @@ class Session:
         self.history.append(before)
         self.notation.append(label)
         self.after_move()
+
+    def undo(self):
+        """Reverse the last move; against the computer, its reply and the player's move.
+
+        Undo at the beginning of the game does nothing.
+        """
+        steps = 1
+        if self.opponent == "computer" and self.position[1] == "w":
+            # The computer has replied: take back its reply and the player's move.
+            steps = 2
+        steps = min(steps, len(self.history))
+        for _ in range(steps):
+            self.undone.append(self.snapshot())
+            restored = self.history.pop()
+            self.position = restored["position"]
+            self.notation = restored["notation"]
+        if steps:
+            self.after_move()
 
     def after_move(self):
         pass
@@ -72,6 +92,8 @@ class Session:
             if not self.computer_to_move():
                 raise ValueError("It is not the computer's turn")
             self.play(*choose_move(self.position))
+        elif command == "undo":
+            self.undo()
         elif command == "legal":
             return {"targets": legal_moves(self.position, action.get("source"))}
         elif command == "new":
