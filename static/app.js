@@ -138,11 +138,44 @@ async function clickSquare(square) {
   finally { busy = false; }
 }
 
+function downloadGame(saved) {
+  const url = URL.createObjectURL(new Blob([JSON.stringify(saved, null, 2)], {type: 'application/json'}));
+  const link = document.createElement('a');
+  link.href = url; link.download = 'chess.save.json';
+  document.body.append(link); link.click(); link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+const loadFile = document.querySelector('#load-file');
+loadFile.onchange = async () => {
+  const file = loadFile.files[0];
+  if (!file || busy) { loadFile.value = ''; return; }
+  busy = true;
+  message.textContent = '';
+  try {
+    if (file.size > 900_000) throw new Error('This save file is too large (maximum 900 KB).');
+    let data;
+    try { data = JSON.parse(await file.text()); }
+    catch { throw new Error('Choose a valid chess save file (JSON).'); }
+    state = await request({action: 'load', data});
+    selected = null; targets = [];
+    render();
+    await computerReply();
+  } catch (error) { message.textContent = error.message; }
+  finally { busy = false; loadFile.value = ''; }
+};
+
 document.querySelector('#controls').onclick = async event => {
   const button = event.target.closest('button');
   if (!button?.dataset.action || busy) return;
+  if (button.dataset.action === 'load') { loadFile.click(); return; }
   busy = true;
+  message.textContent = '';
   try {
+    if (button.dataset.action === 'save') {
+      downloadGame(await request({action: 'save'}));
+      return;
+    }
     state = await request({action: button.dataset.action, opponent: button.dataset.opponent});
     selected = null; targets = [];
     message.textContent = ''; render();
@@ -150,8 +183,11 @@ document.querySelector('#controls').onclick = async event => {
   finally { busy = false; }
 };
 
+busy = true;
 try {
   const response = await fetch('/api/state');
   if (!response.ok) throw new Error('Could not load the game');
   state = await response.json(); render();
+  await computerReply();
 } catch (error) { message.textContent = error.message; }
+finally { busy = false; }

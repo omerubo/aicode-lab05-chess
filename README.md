@@ -34,9 +34,36 @@ plays the same moves.
 - `game.py`: board and turn in a position list; movement, check, checkmate and stalemate.
 - `session.py`: game actions, the opponent, displayed move notation, and sidebar information.
 - `computer.py`: the computer opponent.
+- `savegame.py`: validation of the versioned JSON save format.
 - `server.py`: one in-memory game, HTTP actions, and static files. Restarting loses the game.
 - `static/`: browser presentation and square selection. All movement decisions run in Python.
 - `tests/`: starter behavior checks.
+
+## Save and load
+
+Click **Save game** to download `chess.save.json`. Click **Load game** and select the
+file to resume it, including in a fresh server instance. Loading replaces the current
+game and restores its board, turn, notation, opponent mode, and undo history. Invalid
+files leave the current game unchanged. The browser accepts files up to 900 KB.
+If a loaded game is waiting for the computer, the browser asks it to make its next move.
+
+### Shared history contract for the undo branch
+
+`Session.history` is a list of snapshots, oldest first, with one entry per successful
+individual move (including each computer move). Each entry is a dictionary containing
+`position` (a copied `[board, turn]`) and `notation` (a copied list of move labels), both
+from **before** that move. `Session.snapshot()` creates this independent snapshot.
+`Session.play()` already records it; avoid recording the same move a second time when
+merging the undo branch.
+
+Undo can pop a snapshot and restore its `position` and `notation`, then refresh derived
+sidebar information with `after_move()`. Repeated pops reach the initial game. The pair
+still needs to decide whether undo against the computer reverses one or two moves.
+New game clears `history`. Save/load preserves all snapshots, so moves played before
+saving remain available to undo after loading.
+
+The save API is `{"action": "save"}`; the load API is
+`{"action": "load", "data": saved_object}`. The current format version is `1`.
 
 ## Working together
 
