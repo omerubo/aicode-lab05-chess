@@ -3,7 +3,7 @@
 from copy import deepcopy
 
 from computer import choose_move
-from captured import missing_pieces
+from captured import captured_pieces
 from game import (
     copy_position,
     legal_moves,
@@ -84,7 +84,8 @@ class Session:
         self.after_move()
 
     def after_move(self):
-        self.captured = missing_pieces(self.position)
+        positions = [snapshot["position"] for snapshot in self.history]
+        self.captured = captured_pieces(positions + [self.position])
 
     def view(self):
         return {
