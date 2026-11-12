@@ -9,6 +9,7 @@ from game import (
     legal_moves,
     move,
     new_position,
+    promotes,
     status,
     winner,
 )
@@ -41,9 +42,9 @@ class Session:
         """A pre-move snapshot: undo restores both fields from history.pop()."""
         return {"position": copy_position(self.position), "notation": self.notation.copy()}
 
-    def play(self, source, target):
+    def play(self, source, target, promotion=None):
         before = self.snapshot()
-        label = move(self.position, source, target)
+        label = move(self.position, source, target, promotion)
         self.history.append(before)
         self.notation.append(label)
         self.after_move()
@@ -108,7 +109,7 @@ class Session:
         if command == "move":
             if self.computer_to_move():
                 raise ValueError("Wait for the computer's move")
-            self.play(action.get("source"), action.get("target"))
+            self.play(action.get("source"), action.get("target"), action.get("promotion"))
         elif command == "computer-move":
             if not self.computer_to_move():
                 raise ValueError("It is not the computer's turn")
@@ -116,7 +117,10 @@ class Session:
         elif command == "undo":
             self.undo()
         elif command == "legal":
-            return {"targets": legal_moves(self.position, action.get("source"))}
+            source = action.get("source")
+            targets = legal_moves(self.position, source)
+            return {"targets": targets,
+                    "promotions": [t for t in targets if promotes(self.position, source, t)]}
         elif command == "save":
             return self.save()
         elif command == "load":
